@@ -1,2 +1,2 @@
-# fmlab-setup
-Terraform &amp; helm configuration files for my homelab
+# homelab-setup
+Ansible, Vagrant, Terraform, and Helm configuration files for setting up my homelab.
