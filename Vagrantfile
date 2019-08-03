@@ -1,10 +1,12 @@
-IMAGE_NAME = "debian/stretch64"
-N = 2
-MASTER_IP = "192.168.0.200"
-NODE_RANGE = 200
+# Vagrant OS image to use
+IMAGE_NAME = "debian/buster64"
+
+# Network settings
 NET_SUBNET = "192.168.0."
-NET_GW = "192.168.0.1"
-NET_DNS = "192.168.0.15"
+NETR_START = 200
+
+# Number of k8s worker nodes wanted
+N = 2
 
 Vagrant.configure("2") do |config|
     config.ssh.insert_key = false
@@ -17,20 +19,17 @@ Vagrant.configure("2") do |config|
     config.vm.define "k8s-master" do |master|
         master.vm.box = IMAGE_NAME
         master.vm.network :public_network,
-            :dev => "virbr0",
+            :dev => "br0",
             :mode => "virtio",
             :type => "bridge",
-            auto_config: false
+            :mac => "0818E9E44C00",
+            auto_config: true
         master.vm.hostname = "k8s-master"
-        master.vm.provision "shell", run: "always" do |s|
-          s.path  = "scripts/set-static-ip.sh"
-          s.args    = [MASTER_IP, NET_GW, NET_DNS]
-        end
-        master.vm.provision :reload
         master.vm.provision "ansible" do |ansible|
-            ansible.playbook = "kubernetes/master-playbook.yml"
+            ansible.playbook = "010-vagrant/master-playbook.yml"
             ansible.extra_vars = {
-                node_ip: "MASTER_IP",
+                net_subnet: "#{NET_SUBNET}",
+                node_ip: "#{NET_SUBNET}#{NETR_START}",
             }
         end
     end
@@ -39,20 +38,16 @@ Vagrant.configure("2") do |config|
         config.vm.define "k8s-node-#{i}" do |node|
             node.vm.box = IMAGE_NAME
             node.vm.network :public_network,
-                :dev => "virbr0",
+                :dev => "br0",
                 :mode => "virtio",
                 :type => "bridge",
-                auto_config: false
+                :mac => "0818E9E44C0#{i}",
+                auto_config: true
             node.vm.hostname = "k8s-node-#{i}"
-            node.vm.provision "shell", run: "always" do |s|
-                s.path  = "scripts/set-static-ip.sh"
-                s.args    = ["NET_SUBNET #{i} + NODE_RANGE", NET_GW, NET_DNS]
-            end
-            node.vm.provision :reload
             node.vm.provision "ansible" do |ansible|
-                ansible.playbook = "kubernetes/node-playbook.yml"
+                ansible.playbook = "010-vagrant/node-playbook.yml"
                 ansible.extra_vars = {
-                    node_ip: "NET_SUBNET#{i + NODE_RANGE}",
+                    node_ip: "#{NET_SUBNET}#{i + NETR_START}",
                 }
             end
         end
