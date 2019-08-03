@@ -99,9 +99,12 @@
      - cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
      - chown vagrant:vagrant /home/vagrant/.kube/config
 
-  - name: Install calico pod network
-    become: false
-    command: kubectl create -f https://docs.projectcalico.org/v3.4/getting-started/kubernetes/installation/hosted/calico.yaml
+  - name: Command for copying kubeconfig to local machine
+    command: cat /home/vagrant/.kube/config
+    register: kubectl_copy
+
+  - name: Copy kubeconfig to project folder for use with Terraform
+    local_action: copy content="{{ kubectl_copy.stdout }}" dest="../.kube/config"
 
   - name: Generate join command
     command: kubeadm token create --print-join-command
